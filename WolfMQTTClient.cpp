@@ -13,7 +13,7 @@
  */
 
 #include <WolfMQTTClient.h>
-
+/*
 extern "C"
 void Logging_cb(const int logLevel, const char *const logMessage);
 
@@ -24,7 +24,7 @@ static char g_print_buf[80];
   snprintf(g_print_buf, 80, __VA_ARGS__); \
   Logging_cb(1, g_print_buf); \
 }
-
+*/
 WolfMQTTClient::WolfMQTTClient()
 {
   int rc;
@@ -41,20 +41,15 @@ WolfMQTTClient::WolfMQTTClient()
   state = STATE_OK;
 
   mqtt_client_ping_timer = millis();
-}
-/*
-WolfMQTTClient& WolfMQTTClient::setServer(IPAddress ip, uint16_t port)
-{
-  return *this;
+
+  server_name[0] = '\0';
 }
 
-WolfMQTTClient& WolfMQTTClient::setServer(uint8_t *ip, uint16_t port)
-{
-  return *this;
-}
-*/
 WolfMQTTClient& WolfMQTTClient::setServer(const char *domain, uint16_t port)
 {
+  strncpy(server_name, domain, MAX_SERVER_NAME_SIZE);
+  server_port = port;
+
   return *this;
 }
 
@@ -79,9 +74,7 @@ bool WolfMQTTClient::connect(const char *id)
     Serial.println("MqttClient_NetConnect Start");
     Serial.flush();
     /* Connect to broker */
-    rc = MqttClient_NetConnect(
-        "a21wtlfjxarim7.iot.us-west-2.amazonaws.com", 8883,
-        cmd_timeout_ms, 1, NULL);
+    rc = MqttClient_NetConnect(server_name, server_port, cmd_timeout_ms, 1, NULL);
     if (rc != MQTT_CODE_SUCCESS) {
       Serial.print("ERROR: MqttClient_NetConnect ");
       Serial.println(rc);
@@ -109,7 +102,8 @@ bool WolfMQTTClient::connect(const char *id)
     if (rc == MQTT_CODE_SUCCESS) {
         break;
     }
-    Serial.println("ERROR: MqttClient_Connect");
+    Serial.print("ERROR: MqttClient_Connect ");
+    Serial.println(rc);
   } while (0);
 
   Serial.println("MqttClient_Connect Done");
@@ -219,12 +213,12 @@ bool WolfMQTTClient::unsubscribe(const char* topic)
   return true;
 }
 
-bool WolfMQTTClient::loop()
+bool WolfMQTTClient::loop(int timeout_ms)
 {
   int rc;
 
   /* Read Loop */
-  rc = MqttClient_WaitMessage(cmd_timeout_ms);
+  rc = MqttClient_WaitMessage((timeout_ms > 0) ? timeout_ms : cmd_timeout_ms);
   if (rc == MQTT_CODE_ERROR_TIMEOUT) {
     if ((millis() - mqtt_client_ping_timer) > 60000) {
       rc = MqttClient_Ping();

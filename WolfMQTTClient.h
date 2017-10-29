@@ -83,6 +83,10 @@ private:
   uint8_t tx_buf[MAX_BUFFER_SIZE];
   uint8_t rx_buf[MAX_BUFFER_SIZE];
 
+  static const size_t MAX_SERVER_NAME_SIZE = 64;
+  char server_name[MAX_SERVER_NAME_SIZE];
+  uint16_t server_port;
+
   typedef enum {
     STATE_OK,
     STATE_ERROR
@@ -108,8 +112,6 @@ private:
 public:
   WolfMQTTClient();
 
-//  WolfMQTTClient& setServer(IPAddress ip, uint16_t port);
-//  WolfMQTTClient& setServer(uint8_t * ip, uint16_t port);
   WolfMQTTClient& setServer(const char * domain, uint16_t port);
   WolfMQTTClient& setCallback(WolfMQTTCallback &);
   WolfMQTTClient& setClient(Client& client);
@@ -122,7 +124,7 @@ public:
   bool subscribe(const char* topic);
   bool subscribe(const char* topic, MqttQoS qos);
   bool unsubscribe(const char* topic);
-  bool loop();
+  bool loop(int timeout_ms = 0);
   bool connected();
 
   static int MqttClientNet_Connect(void *_context,

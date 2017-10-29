@@ -26,8 +26,6 @@
 
 #include <WolfMQTTClient.h>
 
-//#define WOLFMQTT_DEBUG_CLIENT
-
 #ifdef WOLFMQTT_DEBUG_CLIENT
 extern "C"
 void Logging_cb(const int logLevel, const char *const logMessage);
@@ -39,9 +37,12 @@ static char g_print_buf[80];
   snprintf(g_print_buf, 80, __VA_ARGS__); \
   Logging_cb(1, g_print_buf); \
 }
-#endif // WOLFMQTT_DEBUG_CLIENT
+
+#else
 
 #define T_PRINTF(...)
+
+#endif // WOLFMQTT_DEBUG_CLIENT
 
 /* Private functions */
 int WolfMQTTClient::MqttClient_WaitType(int timeout_ms,
@@ -291,6 +292,7 @@ int WolfMQTTClient::MqttClient_Connect(MqttConnect *connect)
 {
     int rc, len;
 
+T_PRINTF("MqttClient_Connect @%d\n", __LINE__);
     /* Validate required arguments */
     if (connect == NULL) {
         return MQTT_CODE_ERROR_BAD_ARG;
@@ -298,17 +300,20 @@ int WolfMQTTClient::MqttClient_Connect(MqttConnect *connect)
 
     /* Encode the connect packet */
     rc = MqttEncode_Connect(m_tx_buf, m_tx_buf_len, connect);
+T_PRINTF("MqttClient_Connect %X @%d\n", rc, __LINE__);
     if (rc <= 0) { return rc; }
     len = rc;
 
     /* Send connect packet */
     rc = MqttSocket_Write(m_tx_buf, len, m_cmd_timeout_ms);
+T_PRINTF("MqttClient_Connect %X @%d\n", rc, __LINE__);
     if (rc != len) { return rc; }
 
     /* Wait for connect ack packet */
     rc = MqttClient_WaitType(m_cmd_timeout_ms,
         MQTT_PACKET_TYPE_CONNECT_ACK, 0, &connect->ack);
 
+T_PRINTF("MqttClient_Connect %X @%d\n", rc, __LINE__);
     return rc;
 }
 

@@ -38,9 +38,11 @@ static char g_print_buf[80];
   snprintf(g_print_buf, 80, __VA_ARGS__); \
   Logging_cb(1, g_print_buf); \
 }
-#endif // WOLFMQTT_DEBUG_SOCKET
+#else
 
 #define T_PRINTF(...)
+
+#endif // WOLFMQTT_DEBUG_SOCKET
 
 /* Public Functions */
 
@@ -67,11 +69,20 @@ int WolfMQTTClient::MqttSocket_Write(const byte* buf, int buf_len, int timeout_m
 int WolfMQTTClient::MqttSocket_Read(byte* buf, int buf_len, int timeout_ms)
 {
     int rc=0;
+    uint32_t m;
 
     /* Validate arguments */
     if (buf == NULL || buf_len <= 0) {
         T_PRINTF("MqttSocket_Read @%d\n", __LINE__);
         return MQTT_CODE_ERROR_BAD_ARG;
+    }
+    m = millis();
+
+    while (net_client->available() == 0) {
+      if ((int)(millis() - m) > timeout_ms) {
+        return MQTT_CODE_ERROR_TIMEOUT;
+      }
+      delay(1);
     }
 
     rc = net_client->read(buf, buf_len);
